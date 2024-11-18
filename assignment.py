@@ -1,6 +1,9 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 from datetime import datetime
+from wordcloud import WordCloud
+from collections import Counter
+import re
 
 # Initialize the graph
 social_network = nx.DiGraph()
@@ -89,8 +92,8 @@ if __name__ == "__main__":
     add_user("eve", {"real_name": "Eve Davis", "age": 22, "location": "Oahu"})
     add_user("james", {"real_name": "James Smith", "age": 19, "location": "Kauai"})
     add_user("maria", {"real_name": "Maria Garcia", "age": 23, "location": "Oahu"})
-    # add_user("william", {"real_name": "William Johnson", "age": 20, "location": "Maui"})
-    # add_user("taylor", {"real_name": "Taylor Jackson", "age": 23, "location": "Maui"})
+    add_user("william", {"real_name": "William Johnson", "age": 20, "location": "Maui"})
+    add_user("taylor", {"real_name": "Taylor Jackson", "age": 23, "location": "Maui"})
 
     # Add connections
     add_connection("alice", "eve", "follows")
@@ -169,10 +172,31 @@ if __name__ == "__main__":
     post23 = create_post("maria", "Excited for the weekend!")
     post24 = create_post("carol", "Just bought a new car.")
     post25 = create_post("dave", "Celebrating a friend's birthday.")
-
-    # Posts with profanity
     post26 = create_post("eve", "This is a damn good coffee!")
     post27 = create_post("alice", "What the hell is going on?")
+    post28 = create_post("taylor", "Reflecting on the past year, I've realized how much I've grown and learned. Grateful for all the experiences, both good and bad.")
+    post29 = create_post("james", "Just finished reading an incredible book on personal development. Highly recommend it to anyone looking to improve themselves.")
+    post30 = create_post("maria", "Spent the entire day hiking through the mountains. The views were absolutely breathtaking and the fresh air was invigorating.")
+    post31 = create_post("carol", "Experimenting with new recipes has been so much fun! Today I made a delicious homemade pizza from scratch.")
+    post32 = create_post("dave", "Participated in a charity run this morning. It was a great way to stay active and support a good cause.")
+    post33 = create_post("eve", "Exploring the hidden gems of the city has been an adventure. Found a quaint little coffee shop that serves the best lattes.")
+    post34 = create_post("alice", "Diving into a new hobby: painting. It's been a relaxing and creative outlet for me.")
+    post35 = create_post("bob", "Just watched an inspiring documentary about the power of community and collaboration.")
+    post36 = create_post("taylor", "Attended a virtual conference on technology and innovation. Learned so much about the future of AI and its potential impact.")
+    post37 = create_post("james", "Feeling overwhelmed with work, but taking it one step at a time. Remembering to breathe and stay positive.")
+    post38 = create_post("maria", "Spent the weekend with family, sharing stories and laughter. It's moments like these that I cherish the most.")
+    post39 = create_post("carol", "Tried my hand at gardening today. Planted some flowers and herbs, and can't wait to see them grow.")
+    post40 = create_post("dave", "Just adopted a rescue dog. He's a bundle of energy and has already brought so much joy into my life.")
+    post41 = create_post("eve", "Planning a trip to Europe next summer. Excited to explore new cultures and cuisines.")
+    post42 = create_post("alice", "Enjoying a quiet evening at home with a good book and a cup of tea.")
+    post43 = create_post("bob", "Just finished a challenging workout. Feeling accomplished and ready to tackle the day.")
+    post44 = create_post("taylor", "Had a tough day at work, but grateful for the support of my friends and family.")
+    post45 = create_post("james", "Feeling frustrated with the current situation, but trying to stay hopeful and look for solutions.")
+    post46 = create_post("maria", "Excited for the weekend! Planning to catch up on some much-needed rest and relaxation.")
+    post47 = create_post("carol", "Just bought a new car. Can't wait to take it for a spin and explore new places.")
+    post48 = create_post("dave", "Celebrating a friend's birthday tonight. Looking forward to good food, good company, and lots of laughter.")
+    post49 = create_post("eve", "This is a damn good coffee! Found a new favorite spot to get my caffeine fix.")
+    post50 = create_post("alice", "What the hell is going on? Feeling confused and trying to make sense of everything.")
 
     comment_on_post("bob", post4, "Sounds interesting!")
     comment_on_post("taylor", post5, "Yum!")
@@ -198,17 +222,18 @@ if __name__ == "__main__":
     comment_on_post("carol", post25, "Happy birthday to your friend!")
     comment_on_post("eve", post26, "Glad you like it!")
     comment_on_post("alice", post27, "I know, right?")
+    
 
     # Draw the social network graph
-    draw_social_network()
+    # draw_social_network()
 
     # Example operations on the graph:
 
     # Get all user's posts
-    print(f"alice's posts: {social_network.nodes['alice']['posts']}")
+    # print(f"alice's posts: {social_network.nodes['alice']['posts']}")
     
     # Get all comments under a post
-    user_posts = social_network.nodes["alice"]["posts"]
+"""     user_posts = social_network.nodes["alice"]["posts"]
     first_post = user_posts[0]
     comments = first_post["comments"]
     for comment in comments:
@@ -219,4 +244,37 @@ if __name__ == "__main__":
 
     # Get the follower count of a user
     user_followers = social_network.in_degree("bob")
-    print(f"User: bob has {user_followers} followers")
+    print(f"User: bob has {user_followers} followers") """
+    
+def question3():
+    allContentArr = []
+    for user in social_network.nodes:
+        for post in social_network.nodes[user]['posts']:
+            allContentArr.append(post['content'])
+            
+    allContentStr = ' '.join(allContentArr)
+    
+    # Count the occurrences of each word
+    word_counts = Counter(re.findall(r'\w+', allContentStr.lower()))
+    
+    # Get the top 25 words
+    top_25_words = [word for word, count in word_counts.most_common(50)]
+    
+    # Filter allContentStr to only include the top 25 words
+    wcStr = ' '.join([word for word in re.findall(r'\w+', allContentStr.lower()) if word in top_25_words])
+    
+    # Generate a word cloud image
+    wordcloud = WordCloud().generate(wcStr)
+
+    # Display the generated image:
+    plt.imshow(wordcloud, interpolation='bilinear')
+    plt.axis("off")
+
+    # Lower max_font_size
+    wordcloud = WordCloud(max_font_size=20).generate(wcStr)
+    plt.figure()
+    plt.imshow(wordcloud, interpolation="bilinear")
+    plt.axis("off")
+    plt.show()
+    
+question3()
