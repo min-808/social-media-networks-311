@@ -115,10 +115,12 @@ def draw_network(criteria="comments"):
         if node[1].get("node_type") == "post":
             importance = node[1].get("importance", 0)
             print(f"importance of {node}: {importance}")
-            if importance >= 5:  # Threshold for "important"
+            if importance >= 7:  # Threshold for "important"
                 node_colors.append("red")  # Highly important
-            else:
+            elif importance >= 5:
                 node_colors.append("orange")  # Less important
+            else:
+                node_colors.append("green")
             node_sizes.append(200 + importance * 10)  # Scale size by importance
         else:
             node_colors.append("lightblue")  # User nodes
@@ -244,7 +246,7 @@ if __name__ == "__main__":
 
     # Draw the social network graph
     # Example Usage: Highlight posts based on comments / views
-    draw_network(criteria="views")
+    draw_network(criteria="comments")
 
     user_posts = social_network.nodes["alice"]["posts"]
     first_post = user_posts[0]
