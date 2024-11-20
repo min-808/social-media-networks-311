@@ -1,9 +1,10 @@
+import re
 import networkx as nx
 import matplotlib.pyplot as plt
 from datetime import datetime
 from wordcloud import WordCloud
 from collections import Counter
-import re
+from better_profanity import profanity
 
 # Initialize the graph
 social_network = nx.DiGraph()
@@ -193,36 +194,21 @@ if __name__ == "__main__":
     post44 = create_post("taylor", "Had a tough day at work, but grateful for the support of my friends and family.")
     post45 = create_post("james", "Feeling frustrated with the current situation, but trying to stay hopeful and look for solutions.")
     post46 = create_post("maria", "Excited for the weekend! Planning to catch up on some much-needed rest and relaxation.")
-    post47 = create_post("carol", "Just bought a new car. Can't wait to take it for a spin and explore new places.")
+    post47 = create_post("carol", "Just bought a new car. Cannot wait to take it for a spin and explore new places.")
     post48 = create_post("dave", "Celebrating a friend's birthday tonight. Looking forward to good food, good company, and lots of laughter.")
     post49 = create_post("eve", "This is a damn good coffee! Found a new favorite spot to get my caffeine fix.")
     post50 = create_post("alice", "What the hell is going on? Feeling confused and trying to make sense of everything.")
+    post51 = create_post("carol", "Exploring the latest advancements in technology. It is amazing how fast things are evolving.")
+    post52 = create_post("dave", "Just attended a tech meetup. Learned a lot about blockchain and its potential applications.")
+    post53 = create_post("eve", "Reading about the impact of technology on education. It is fascinating to see how it is transforming learning.")
+    post54 = create_post("alice", "Excited about the new tech gadgets coming out this year. Cannot wait to try them out.")
+    post55 = create_post("taylor", "Discussing the ethical implications of AI technology. It is a complex and important topic.")
+    post56 = create_post("james", "Working on a project that uses cutting-edge technology. It is challenging but rewarding.")
+    post57 = create_post("maria", "Attended a webinar on the future of technology in healthcare. The possibilities are endless.")
+    post58 = create_post("carol", "Exploring the role of technology in environmental conservation. It is a powerful tool for change.")
+    post59 = create_post("dave", "Learning about the history of technology and its impact on society. It is a fascinating journey.")
+    post60 = create_post("eve", "Discussing the future of technology with friends. It is exciting to think about what is next.")
 
-    comment_on_post("bob", post4, "Sounds interesting!")
-    comment_on_post("taylor", post5, "Yum!")
-    comment_on_post("james", post6, "Congrats!")
-    comment_on_post("maria", post7, "Enjoy!")
-    comment_on_post("dave", post8, "Nice!")
-    comment_on_post("carol", post9, "Great job!")
-    comment_on_post("eve", post10, "Have fun!")
-    comment_on_post("alice", post11, "Interesting read.")
-    comment_on_post("bob", post12, "How was it?")
-    comment_on_post("taylor", post13, "Have a great time!")
-    comment_on_post("james", post14, "Good luck!")
-    comment_on_post("maria", post15, "Safe travels!")
-    comment_on_post("dave", post16, "Enjoy your new hobby!")
-    comment_on_post("carol", post17, "Congrats on the new puppy!")
-    comment_on_post("eve", post18, "Have a great trip!")
-    comment_on_post("alice", post19, "Sounds relaxing.")
-    comment_on_post("bob", post20, "Great job!")
-    comment_on_post("taylor", post21, "Sorry to hear that.")
-    comment_on_post("james", post22, "Hang in there.")
-    comment_on_post("maria", post23, "Me too!")
-    comment_on_post("dave", post24, "Congrats on the new car!")
-    comment_on_post("carol", post25, "Happy birthday to your friend!")
-    comment_on_post("eve", post26, "Glad you like it!")
-    comment_on_post("alice", post27, "I know, right?")
-    
 
     # Draw the social network graph
     # draw_social_network()
@@ -233,48 +219,89 @@ if __name__ == "__main__":
     # print(f"alice's posts: {social_network.nodes['alice']['posts']}")
     
     # Get all comments under a post
-"""     user_posts = social_network.nodes["alice"]["posts"]
-    first_post = user_posts[0]
-    comments = first_post["comments"]
-    for comment in comments:
-      print(f"User: {comment['user']}, Comment: {comment['content']}, Time: {comment['creation_time']}")
+    # user_posts = social_network.nodes["alice"]["posts"]
+    # first_post = user_posts[0]
+    # comments = first_post["comments"]
+    # for comment in comments:
+    #   print(f"User: {comment['user']}, Comment: {comment['content']}, Time: {comment['creation_time']}")
 
-    # Get all views of a post
-    print(f"User: post1 has {len(post1['views'])} views")
+    # # Get all views of a post
+    # print(f"User: post1 has {len(post1['views'])} views")
 
-    # Get the follower count of a user
-    user_followers = social_network.in_degree("bob")
-    print(f"User: bob has {user_followers} followers") """
+    # # Get the follower count of a user
+    # user_followers = social_network.in_degree("bob")
+    # print(f"User: bob has {user_followers} followers")
     
-def question3():
-    allContentArr = []
-    for user in social_network.nodes:
-        for post in social_network.nodes[user]['posts']:
-            allContentArr.append(post['content'])
-            
-    allContentStr = ' '.join(allContentArr)
-    
-    # Count the occurrences of each word
-    word_counts = Counter(re.findall(r'\w+', allContentStr.lower()))
-    
-    # Get the top 25 words
-    top_25_words = [word for word, count in word_counts.most_common(50)]
-    
-    # Filter allContentStr to only include the top 25 words
-    wcStr = ' '.join([word for word in re.findall(r'\w+', allContentStr.lower()) if word in top_25_words])
-    
-    # Generate a word cloud image
-    wordcloud = WordCloud().generate(wcStr)
+# Ensure profanity library is initialized
+profanity.load_censor_words()
+def generateWordCloud(
+  social_network, 
+  includeKeywords=None, 
+  excludeKeywords=None, 
+  userAttributes=None, 
+  censorProfanity=True
+  minWordLength=3,
+):
+  filteredContentArr = []
 
-    # Display the generated image:
-    plt.imshow(wordcloud, interpolation='bilinear')
-    plt.axis("off")
+  for user in social_network.nodes:
+    # Check if user attributes match
+    if userAttributes:
+      match = all(userAttributes.get(attr) == social_network.nodes[user].get(attr) for attr in userAttributes)
+      if not match:
+        continue
 
-    # Lower max_font_size
-    wordcloud = WordCloud(max_font_size=20).generate(wcStr)
-    plt.figure()
-    plt.imshow(wordcloud, interpolation="bilinear")
-    plt.axis("off")
-    plt.show()
+    for post in social_network.nodes[user]['posts']:
+      content = post['content']
+      
+      # Filter posts based on include and exclude keywords
+      if includeKeywords and not any(keyword in content for keyword in includeKeywords):
+        continue
+      if excludeKeywords and any(keyword in content for keyword in excludeKeywords):
+        continue
+      # Filter out profanity
+      if censorProfanity:
+        content = profanity.censor(content)
+        
+      filteredContentArr.append(content)
+
+  # Debug: Print the filtered content
+  # print("Filtered Content Array:", filteredContentArr)
+  
+  filteredContentStr = ' '.join(filteredContentArr)
+  
+  # Remove all symbols and apostrophes
+  filteredContentStr = re.sub(r"[^\w\s]", "", filteredContentStr).replace("'", "")
+  allWords = filteredContentStr.split()
+  
+  allWords = [word for word in allWords if len(word) > minWordLength]
     
-question3()
+  allWordsSpaced = ' '.join(allWords)
+  
+  print("All Words:", allWordsSpaced)
+
+  # Count the occurrences of each word
+  wordCounters = Counter(re.findall(r'\w+', allWordsSpaced))
+
+  # print("Word Counters:", wordCounters)
+
+  # Get the top 25 words
+  top25 = [word for word, count in wordCounters.most_common(25)]
+
+  print("Top 25 Words:", top25)
+
+  # Filter allContentStr to only include the top 25 words
+  wordCloudString = ' '.join([word for word in re.findall(r'\w+', allWordsSpaced) if word in top25])
+
+  # Debug: Print the word cloud string
+  print("Word Cloud String:", wordCloudString)
+
+  # Generate a word cloud image
+  wordCloud = WordCloud(max_font_size=40).generate(wordCloudString)
+
+  # Display the generated image
+  plt.imshow(wordCloud, interpolation='bilinear')
+  plt.axis("off")
+  plt.show()
+
+generateWordCloud(social_network)
