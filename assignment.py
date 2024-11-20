@@ -177,7 +177,7 @@ if __name__ == "__main__":
     post27 = create_post("alice", "What the hell is going on?")
     post28 = create_post("taylor", "Reflecting on the past year, I've realized how much I've grown and learned. Grateful for all the experiences, both good and bad.")
     post29 = create_post("james", "Just finished reading an incredible book on personal development. Highly recommend it to anyone looking to improve themselves.")
-    post30 = create_post("maria", "Spent the entire day hiking through the mountains. The views were absolutely breathtaking and the fresh air was invigorating.")
+    post30 = create_post("maria", "Spent the entire day hiking through the mountains. The views were nice, but the hike itself was crappy.")
     post31 = create_post("carol", "Experimenting with new recipes has been so much fun! Today I made a delicious homemade pizza from scratch.")
     post32 = create_post("dave", "Participated in a charity run this morning. It was a great way to stay active and support a good cause.")
     post33 = create_post("eve", "Exploring the hidden gems of the city has been an adventure. Found a quaint little coffee shop that serves the best lattes.")
@@ -211,37 +211,53 @@ if __name__ == "__main__":
 
 
     # Draw the social network graph
-    # draw_social_network()
+    draw_social_network()
 
     # Example operations on the graph:
 
     # Get all user's posts
-    # print(f"alice's posts: {social_network.nodes['alice']['posts']}")
+    print(f"alice's posts: {social_network.nodes['alice']['posts']}")
     
     # Get all comments under a post
-    # user_posts = social_network.nodes["alice"]["posts"]
-    # first_post = user_posts[0]
-    # comments = first_post["comments"]
-    # for comment in comments:
-    #   print(f"User: {comment['user']}, Comment: {comment['content']}, Time: {comment['creation_time']}")
+    user_posts = social_network.nodes["alice"]["posts"]
+    first_post = user_posts[0]
+    comments = first_post["comments"]
+    for comment in comments:
+      print(f"User: {comment['user']}, Comment: {comment['content']}, Time: {comment['creation_time']}")
 
     # # Get all views of a post
-    # print(f"User: post1 has {len(post1['views'])} views")
+    print(f"User: post1 has {len(post1['views'])} views")
 
     # # Get the follower count of a user
-    # user_followers = social_network.in_degree("bob")
-    # print(f"User: bob has {user_followers} followers")
+    user_followers = social_network.in_degree("bob")
+    print(f"User: bob has {user_followers} followers")
     
-# Ensure profanity library is initialized
+
 profanity.load_censor_words()
 def generateWordCloud(
   social_network, 
   includeKeywords=None, 
   excludeKeywords=None, 
   userAttributes=None, 
-  censorProfanity=True
+  censorProfanity=True,
   minWordLength=3,
+  maxPosts=None,
 ):
+  """
+  Generate a word cloud from the posts in a social network.
+
+  Parameters:
+  social_network (networkx.Graph): The social network graph.
+  includeKeywords (list of str, optional): Keywords to include in the word cloud.
+  excludeKeywords (list of str, optional): Keywords to exclude from the word cloud.
+  userAttributes (dict, optional): Attributes to filter users.
+  censorProfanity (bool, optional): Whether to censor profanity in the word cloud.
+  minWordLength (int, optional): Minimum length of words to include in the word cloud.
+  maxPosts (int, optional): Maximum number of posts to consider per user.
+
+  Returns:
+  None
+  """
   filteredContentArr = []
 
   for user in social_network.nodes:
@@ -251,7 +267,11 @@ def generateWordCloud(
       if not match:
         continue
 
+    postCount = 0;
     for post in social_network.nodes[user]['posts']:
+      if maxPosts is not None and postCount >= maxPosts:
+        break;
+      
       content = post['content']
       
       # Filter posts based on include and exclude keywords
@@ -264,6 +284,7 @@ def generateWordCloud(
         content = profanity.censor(content)
         
       filteredContentArr.append(content)
+      postCount += 1
 
   # Debug: Print the filtered content
   # print("Filtered Content Array:", filteredContentArr)
@@ -285,7 +306,6 @@ def generateWordCloud(
 
   # print("Word Counters:", wordCounters)
 
-  # Get the top 25 words
   top25 = [word for word, count in wordCounters.most_common(25)]
 
   print("Top 25 Words:", top25)
@@ -293,13 +313,9 @@ def generateWordCloud(
   # Filter allContentStr to only include the top 25 words
   wordCloudString = ' '.join([word for word in re.findall(r'\w+', allWordsSpaced) if word in top25])
 
-  # Debug: Print the word cloud string
   print("Word Cloud String:", wordCloudString)
 
-  # Generate a word cloud image
-  wordCloud = WordCloud(max_font_size=40).generate(wordCloudString)
-
-  # Display the generated image
+  wordCloud = WordCloud(max_font_size=42).generate(wordCloudString)
   plt.imshow(wordCloud, interpolation='bilinear')
   plt.axis("off")
   plt.show()
