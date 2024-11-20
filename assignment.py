@@ -1,222 +1,136 @@
 import networkx as nx
-import matplotlib.pyplot as plt
-from datetime import datetime
+from datetime import datetime, timedelta
+import random
 
-# Initialize the graph
+# Initialize the social network graph
 social_network = nx.DiGraph()
 
-def add_user(user_name, attributes = None):
-    """ Add a user to the social network. """
-
+# Add a user to the social network
+def add_user(user_name, attributes=None):
     if attributes is None:
         attributes = {}
-    social_network.add_node(user_name, 
-                            attributes=attributes, 
-                            posts=[], 
-                            seen_posts=[], 
-                            comments=[])
+    social_network.add_node(user_name, attributes=attributes, posts=[], seen_posts=[], comments=[])
 
-def add_connection(from_user, to_user, connection_type):
-    """ Add a directional connection between two users. """
-    
-    if not social_network.has_edge(from_user, to_user):
-        social_network.add_edge(from_user, to_user, connection_types=[])
-    social_network[from_user][to_user]['connection_types'].append(connection_type)
-
+# Create a post for a user
 def create_post(user_name, content):
-    """ Create a post for a user. """
-
     post = {
         "content": content,
         "creation_time": datetime.now(),
         "comments": [],
         "views": []
     }
-    social_network.nodes[user_name]['posts'].append(post)
+    social_network.nodes[user_name]["posts"].append(post)
     return post
 
+# Record a user viewing a post
 def view_post(user_name, post):
-    """ Record that a user has viewed a post. """
+    if post not in social_network.nodes[user_name]["seen_posts"]:
+        social_network.nodes[user_name]["seen_posts"].append(post)
+    post["views"].append({"user": user_name, "view_time": datetime.now()})
 
-    if post not in social_network.nodes[user_name]['seen_posts']:
-        social_network.nodes[user_name]['seen_posts'].append(post)
-    post['views'].append({"user": user_name, "view_time": datetime.now()})
+# Identify trending posts with filters
+def trending_posts(
+    time_window_hours=24, 
+    include_keywords=None, 
+    exclude_keywords=None, 
+    user_attribute_filters=None
+):
+    current_time = datetime.now()
+    trending = []
 
-def comment_on_post(user_name, post, content):
-    """ Add a comment to a post by a user. """
-    comment = {
-        "user": user_name,
-        "content": content,
-        "creation_time": datetime.now()
-    }
-    post['comments'].append(comment)
-    social_network.nodes[user_name]['comments'].append(comment)
+    for node, data in social_network.nodes(data=True):
+        # Apply user attribute filters
+        if user_attribute_filters:
+            if not all(data["attributes"].get(attr) == value for attr, value in user_attribute_filters.items()):
+                continue
 
-def draw_social_network():
-    """ Draw the social network graph using matplotlib. """
-    plt.figure(figsize=(14, 10))
-    
-    # Node positions
-    pos = nx.spring_layout(social_network)
-    
-    # Draw nodes and edges
-    nx.draw_networkx_nodes(social_network, pos, node_size=500, node_color='lightblue')
-    nx.draw_networkx_edges(social_network, pos, arrowstyle="->", arrowsize=10, edge_color='black')
-    
-    # Node labels
-    node_labels = {node: node for node in social_network.nodes()}
-    nx.draw_networkx_labels(social_network, pos, labels=node_labels, font_size=8, font_color='black')
-    
-    # Edge labels (connection types)
-    edge_labels = {
-        (u, v): ", ".join(data['connection_types']) 
-        for u, v, data in social_network.edges(data=True)
-    }
-    nx.draw_networkx_edge_labels(social_network, pos, edge_labels=edge_labels, font_size=10)
-    
-    # Display the graph
-    plt.title("Social Network Graph")
-    plt.axis("off")
-    plt.show()
+        for post in data["posts"]:
+            # Apply keyword filters
+            if include_keywords and not any(keyword in post["content"] for keyword in include_keywords):
+                continue
+            if exclude_keywords and any(keyword in post["content"] for keyword in exclude_keywords):
+                continue
 
-# Example usage
+            # Count recent views
+            recent_views = [
+                view for view in post["views"]
+                if current_time - view["view_time"] <= timedelta(hours=time_window_hours)
+            ]
+            trending.append({
+                "post": post,
+                "author": node,
+                "view_count": len(recent_views)
+            })
+
+    # Sort posts by view count in descending order
+    trending.sort(key=lambda x: x["view_count"], reverse=True)
+    return trending
+
+# Test the implementation with uneven view distribution
 if __name__ == "__main__":
     # Add users
-    add_user("alice", {"real_name": "Alice Smith", "age": 30, "location": "Oahu"})
-    add_user("bob", {"real_name": "Bob Jones", "age": 25, "location": "Oahu"})
-    add_user("carol", {"real_name": "Carol White", "age": 35, "location": "Oahu"})
-    add_user("dave", {"real_name": "Dave Brown", "age": 28, "location": "Maui"})
-    add_user("eve", {"real_name": "Eve Davis", "age": 22, "location": "Oahu"})
-    add_user("james", {"real_name": "James Smith", "age": 19, "location": "Kauai"})
-    add_user("maria", {"real_name": "Maria Garcia", "age": 23, "location": "Oahu"})
-    # add_user("william", {"real_name": "William Johnson", "age": 20, "location": "Maui"})
-    # add_user("taylor", {"real_name": "Taylor Jackson", "age": 23, "location": "Maui"})
+    add_user("alice", {"real_name": "Alice Smith", "age": 30, "location": "Oahu", "gender": "Female"})
+    add_user("bob", {"real_name": "Bob Jones", "age": 25, "location": "Oahu", "gender": "Male"})
+    add_user("carol", {"real_name": "Carol White", "age": 35, "location": "Oahu", "gender": "Female"})
+    add_user("dave", {"real_name": "Dave Brown", "age": 28, "location": "Maui", "gender": "Male"})
+    add_user("eve", {"real_name": "Eve Davis", "age": 22, "location": "Oahu", "gender": "Female"})
+    add_user("james", {"real_name": "James Smith", "age": 19, "location": "Kauai", "gender": "Male"})
+    add_user("maria", {"real_name": "Maria Garcia", "age": 23, "location": "Oahu", "gender": "Female"})
+    add_user("william", {"real_name": "William Johnson", "age": 20, "location": "Maui", "gender": "Male"})
+    add_user("taylor", {"real_name": "Taylor Jackson", "age": 22, "location": "Maui", "gender": "Female"})
 
-    # Add connections
-    add_connection("alice", "eve", "follows")
-    add_connection("alice", "taylor", "follows")
-    add_connection("alice", "carol", "blocked")
 
-    add_connection("bob", "alice", "follows")
-    add_connection("bob", "carol", "follows")
+    # Create posts
+    posts = []
+    posts.append(create_post("alice", "Exploring beautiful Oahu!"))
+    posts.append(create_post("bob", "What a damn good day!"))
+    posts.append(create_post("carol", "Learning Python is fucking fun!"))
+    posts.append(create_post("dave", "Just finished hiking a volcano."))
+    posts.append(create_post("eve", "Loving life on the islands!"))
+    posts.append(create_post("eve", "This island is amazing, hell yeah!"))
+    posts.append(create_post("james", "Learning photography to capture island beauty."))
+    posts.append(create_post("james", "Reading about Hawaiian history."))
+    posts.append(create_post("maria", "Excited to start a new adventure!"))
+    posts.append(create_post("maria", "Learning how to bake this weekend."))
+    posts.append(create_post("william", "Attending a cultural event in Maui."))
+    posts.append(create_post("william", "Learning to cook traditional Hawaiian dishes."))
+    posts.append(create_post("taylor", "Scuba diving in Maui is so much fun!"))
+    posts.append(create_post("taylor", "Enjoying a calm evening on the beach."))
 
-    add_connection("carol", "bob", "follows")
-    add_connection("carol", "eve", "follows")
+    # Simulate uneven views
+    viewers = ["alice", "bob", "carol", "dave", "eve", "james", "maria", "william", "taylor"]
+    for post in posts:
+        # Randomize number of views (1 to 200 per post)(Adjustable)
+        # For testing purposes only, simulating a real-world scenario(Too much work to input each user's view manually)
+        for _ in range(random.randint(1, 200)):
+            viewer = random.choice(viewers)
+            view_post(viewer, post)
 
-    add_connection("dave", "taylor", "follows")
-    add_connection("dave", "bob", "follows")
-
-    add_connection("eve", "alice", "follows")
-    add_connection("eve", "bob", "follows")
-    add_connection("eve", "taylor", "blocked")
-
-    add_connection("james", "maria", "follows")
-    add_connection("james", "taylor", "follows")
-    add_connection("james", "bob", "blocked")
-
-    add_connection("maria", "carol", "follows")
-    add_connection("maria", "dave", "follows")
-    add_connection("maria", "bob", "follows")
-
-    # Alice creates a post
-    post1 = create_post("alice", "Hello, world!")
-
-    # Bob views Alice's post
-    view_post("bob", post1)
-    view_post("alice", post1)
-    view_post("maria", post1)
-
-    # Bob comments on Alice's post
-    comment_on_post("bob", post1, "Nice post!")
-
-    # Carol creates a post
-    post2 = create_post("carol", "Excited about the new project!")
-
-    # Dave views and comments on Carol's post
-    view_post("dave", post2)
-    comment_on_post("dave", post2, "Looking forward to it!")
-
-    # Eve creates a post
-    post3 = create_post("eve", "Just moved to Oahu, loving it here!")
-
-    # Alice and Bob view Eve's post
-    view_post("alice", post3)
-    view_post("bob", post3)
-
-    # Alice comments on Eve's post
-    comment_on_post("alice", post3, "Oahu is amazing!")
-
-    # Additional posts
-    post4 = create_post("bob", "Just finished a great book!")
-    post5 = create_post("taylor", "Had an amazing dinner last night.")
-    post6 = create_post("james", "Started a new job today!")
-    post7 = create_post("maria", "Enjoying a sunny day at the beach.")
-    post8 = create_post("carol", "Learning to cook new recipes.")
-    post9 = create_post("dave", "Just ran a marathon!")
-    post10 = create_post("eve", "Exploring the city.")
-    post11 = create_post("alice", "Reading a fascinating article.")
-    post12 = create_post("bob", "Watching a new movie.")
-    post13 = create_post("taylor", "Attending a concert tonight.")
-    post14 = create_post("james", "Working on a new project.")
-    post15 = create_post("maria", "Visiting family this weekend.")
-    post16 = create_post("carol", "Trying out a new hobby.")
-    post17 = create_post("dave", "Just adopted a puppy!")
-    post18 = create_post("eve", "Planning a trip to Europe.")
-    post19 = create_post("alice", "Enjoying a quiet evening at home.")
-    post20 = create_post("bob", "Just finished a workout.")
-    post21 = create_post("taylor", "Had a terrible day at work.")
-    post22 = create_post("james", "Feeling frustrated with everything.")
-    post23 = create_post("maria", "Excited for the weekend!")
-    post24 = create_post("carol", "Just bought a new car.")
-    post25 = create_post("dave", "Celebrating a friend's birthday.")
-
-    # Posts with profanity
-    post26 = create_post("eve", "This is a damn good coffee!")
-    post27 = create_post("alice", "What the hell is going on?")
-
-    comment_on_post("bob", post4, "Sounds interesting!")
-    comment_on_post("taylor", post5, "Yum!")
-    comment_on_post("james", post6, "Congrats!")
-    comment_on_post("maria", post7, "Enjoy!")
-    comment_on_post("dave", post8, "Nice!")
-    comment_on_post("carol", post9, "Great job!")
-    comment_on_post("eve", post10, "Have fun!")
-    comment_on_post("alice", post11, "Interesting read.")
-    comment_on_post("bob", post12, "How was it?")
-    comment_on_post("taylor", post13, "Have a great time!")
-    comment_on_post("james", post14, "Good luck!")
-    comment_on_post("maria", post15, "Safe travels!")
-    comment_on_post("dave", post16, "Enjoy your new hobby!")
-    comment_on_post("carol", post17, "Congrats on the new puppy!")
-    comment_on_post("eve", post18, "Have a great trip!")
-    comment_on_post("alice", post19, "Sounds relaxing.")
-    comment_on_post("bob", post20, "Great job!")
-    comment_on_post("taylor", post21, "Sorry to hear that.")
-    comment_on_post("james", post22, "Hang in there.")
-    comment_on_post("maria", post23, "Me too!")
-    comment_on_post("dave", post24, "Congrats on the new car!")
-    comment_on_post("carol", post25, "Happy birthday to your friend!")
-    comment_on_post("eve", post26, "Glad you like it!")
-    comment_on_post("alice", post27, "I know, right?")
-
-    # Draw the social network graph
-    draw_social_network()
-
-    # Example operations on the graph:
-
-    # Get all user's posts
-    print(f"alice's posts: {social_network.nodes['alice']['posts']}")
+    # Trending posts report
+    # Test 1: Trending Posts (Location: Oahu, Without Profanity)
+    print("\nTop 3 Trending Posts (Location: Oahu, Without Profanity):")
+    trending_oahu_no_profanity = trending_posts(
+        time_window_hours=24,
+        exclude_keywords=["damn", "hell", "fucking"],
+        user_attribute_filters={"location": "Oahu"}
+    )
+    for trend in trending_oahu_no_profanity[:3]:  # Display only the top 3 posts(Changable to any number of posts you want to display)
+        print(f"Author: {trend['author']}, Content: {trend['post']['content']}, Views: {trend['view_count']}")
     
-    # Get all comments under a post
-    user_posts = social_network.nodes["alice"]["posts"]
-    first_post = user_posts[0]
-    comments = first_post["comments"]
-    for comment in comments:
-      print(f"User: {comment['user']}, Comment: {comment['content']}, Time: {comment['creation_time']}")
+    # Test 2: Trending Posts Including the Word 'Island'
+    print("\nTop 3 Trending Posts Including the Word 'Island':")
+    trending_island = trending_posts(
+        time_window_hours=24,
+        include_keywords=["island"]
+    )
+    for trend in trending_island[:3]:  # Display only the top 3 posts(Changable to any number of posts you want to display)
+        print(f"Author: {trend['author']}, Content: {trend['post']['content']}, Views: {trend['view_count']}")
 
-    # Get all views of a post
-    print(f"User: post1 has {len(post1['views'])} views")
-
-    # Get the follower count of a user
-    user_followers = social_network.in_degree("bob")
-    print(f"User: bob has {user_followers} followers")
+    # Test 3: Trending Posts for Users Based on Age and Gender
+    print("\nTop 3 Trending Posts (Female Users Aged 22):")
+    trending_females_age_22 = trending_posts(
+        time_window_hours=24,
+        user_attribute_filters={"gender": "Female", "age": 22}  
+    )
+    for trend in trending_females_age_22[:3]:  # Display only the top 3 posts(Changable to any number of posts you want to display)
+        print(f"Author: {trend['author']}, Content: {trend['post']['content']}, Views: {trend['view_count']}")
