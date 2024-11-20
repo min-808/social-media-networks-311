@@ -54,7 +54,7 @@ def comment_on_post(user_name, post, content):
 
 def draw_social_network():
     """ Draw the social network graph using matplotlib. """
-    plt.figure(figsize=(14, 10))
+    plt.figure(figsize=(16, 10))
     
     # Node positions
     pos = nx.spring_layout(social_network)
@@ -79,18 +79,122 @@ def draw_social_network():
     plt.axis("off")
     plt.show()
 
+# Folowing code 
+def compute_user_importance(user, criteria="comments"):
+    """Compute the importance of a user based on the given criteria."""
+    importance = 0;
+    if criteria == "posts_high":
+        importance = len(user.posts)
+    elif criteria == "posts_low":
+        importance = 1000 - len(user.posts)
+    elif criteria == "views_high":
+        for post in user.posts:
+            criteria += len(post.views)
+    elif criteria == "views_high":
+        criteria = 1000
+        for post in user.posts:
+            criteria -= len(post.views)
+    elif criteria == "comments_high":
+        for post in user.posts:
+            criteria += len(post.comments)
+    elif criteria == "comments_low":
+        criteria = 1000
+        for post in user.posts:
+            criteria -= len(post.comments)
+    else:
+        raise ValueError("Invalid importance criteria.")
+    return importance
+    
+# Following code implemented by Corvey
+def find_users(criteria="comments", limits = "women"):
+    """Draw a diagram of the social media network showing authorship and viewership edges, with important posts highlighted."""
+    plt.figure(figsize=(12, 8))
+    graph = nx.DiGraph()
+
+    # Add users and posts as nodes
+    for user_name in social_network.nodes:
+        graph.add_node(user_name, node_type="user")
+        for post in social_network.nodes[user_name]["posts"]:
+            graph.add_node(id(post), node_type="post", importance=compute_user_importance(post, criteria))
+
+            # Add edges: user → post (authorship)
+            graph.add_edge(user_name, id(post), edge_type="authorship")
+
+            # Add edges: user → post (viewership)
+            for view in post["views"]:
+                graph.add_edge(view["user"], id(post), edge_type="viewership")
+
+    # Compute importance and highlight important posts
+    node_colors = []
+    node_sizes = []
+    for node in graph.nodes(data=True):
+        if node[1].get("node_type") == "user":
+            importance = node[1].get("importance", 0)
+            print(f"importance of {node}: {importance}")
+            if importance >= 7:  # Threshold for "important"
+                node_colors.append("red")  # Highly important
+            elif importance >= 5:
+                node_colors.append("orange")  # Less important
+            else:
+                node_colors.append("green")
+            node_sizes.append(200 + importance * 10)  # Scale size by importance
+        else:
+            node_colors.append("lightblue")  # User nodes
+            node_sizes.append(300)
+
+    # Draw the graph
+    pos = nx.spring_layout(graph, k=0.8)  # Adjust spacing with `k`
+    nx.draw_networkx_nodes(graph, pos, node_color=node_colors, node_size=node_sizes)
+
+    # Draw authorship edges
+    nx.draw_networkx_edges(
+        graph,
+        pos,
+        edgelist=[(u, v) for u, v, data in graph.edges(data=True) if data["edge_type"] == "authorship"],
+        arrowstyle="->",
+        arrowsize=20,
+        edge_color="blue",
+        label="Authorship",
+    )
+
+    # Draw viewership edges
+    nx.draw_networkx_edges(
+        graph,
+        pos,
+        edgelist=[(u, v) for u, v, data in graph.edges(data=True) if data["edge_type"] == "viewership"],
+        arrowstyle="->",
+        arrowsize=10,
+        edge_color="gray",
+        style="dashed",
+        label="Viewership",
+    )
+
+    # Add labels
+    nx.draw_networkx_labels(graph, pos, font_size=10)
+
+    # Add title and legend
+    plt.title(f"Social Media Network (Importance: {criteria.capitalize()})")
+    plt.legend(
+        loc="upper left",
+        handles=[
+            plt.Line2D([0], [0], color="blue", lw=2, label="Authorship"),
+            plt.Line2D([0], [0], color="gray", lw=2, linestyle="dashed", label="Viewership"),
+        ],
+    )
+    plt.axis("off")
+    plt.show()
+
 # Example usage
 if __name__ == "__main__":
     # Add users
-    add_user("alice", {"real_name": "Alice Smith", "age": 30, "location": "Oahu"})
-    add_user("bob", {"real_name": "Bob Jones", "age": 25, "location": "Oahu"})
-    add_user("carol", {"real_name": "Carol White", "age": 35, "location": "Oahu"})
-    add_user("dave", {"real_name": "Dave Brown", "age": 28, "location": "Maui"})
-    add_user("eve", {"real_name": "Eve Davis", "age": 22, "location": "Oahu"})
-    add_user("james", {"real_name": "James Smith", "age": 19, "location": "Kauai"})
-    add_user("maria", {"real_name": "Maria Garcia", "age": 23, "location": "Oahu"})
-    # add_user("william", {"real_name": "William Johnson", "age": 20, "location": "Maui"})
-    # add_user("taylor", {"real_name": "Taylor Jackson", "age": 23, "location": "Maui"})
+    add_user("alice", {"real_name": "Alice Smith", "age": 30, "location": "Oahu", "gender": 'Female'})
+    add_user("bob", {"real_name": "Bob Jones", "age": 25, "location": "Oahu", "gender": 'Male'})
+    add_user("carol", {"real_name": "Carol White", "age": 35, "location": "Oahu", "gender": 'Female'})
+    add_user("dave", {"real_name": "Dave Brown", "age": 28, "location": "Maui", "gender": 'Male'})
+    add_user("eve", {"real_name": "Eve Davis", "age": 22, "location": "Oahu","gender": 'Female'})
+    add_user("james", {"real_name": "James Smith", "age": 19, "location": "Kauai", "gender": 'Male'})
+    add_user("maria", {"real_name": "Maria Garcia", "age": 23, "location": "Oahu", "gender": 'Female'})
+    add_user("taylor", {"real_name": "Taylor Jackson", "age": 23, "location": "Maui", "gender": 'Male'})
 
     # Add connections
     add_connection("alice", "eve", "follows")
@@ -118,105 +222,48 @@ if __name__ == "__main__":
     add_connection("maria", "dave", "follows")
     add_connection("maria", "bob", "follows")
 
-    # Alice creates a post
+    # Make posts
     post1 = create_post("alice", "Hello, world!")
+    post2 = create_post("carol", "Excited about the new project!")
+    post3 = create_post("eve", "Just moved to Oahu, loving it here!")
+    post4 = create_post("bob", "Just finished a great book!")
 
-    # Bob views Alice's post
+    # People view posts
     view_post("bob", post1)
     view_post("alice", post1)
     view_post("maria", post1)
+    view_post("james", post1)
+    view_post("eve", post1)
 
-    # Bob comments on Alice's post
-    comment_on_post("bob", post1, "Nice post!")
-
-    # Carol creates a post
-    post2 = create_post("carol", "Excited about the new project!")
-
-    # Dave views and comments on Carol's post
     view_post("dave", post2)
-    comment_on_post("dave", post2, "Looking forward to it!")
+    view_post("eve", post2)
 
-    # Eve creates a post
-    post3 = create_post("eve", "Just moved to Oahu, loving it here!")
-
-    # Alice and Bob view Eve's post
     view_post("alice", post3)
     view_post("bob", post3)
+    view_post("james", post3)
+    view_post("carol", post3)
+    view_post("dave", post3)
+    view_post("eve", post3)
+    view_post("maria", post3)
+    view_post("taylor", post3)
 
-    # Alice comments on Eve's post
+    # People comment on posts
+    comment_on_post("bob", post1, "Nice post!")
+    comment_on_post("alice", post1, "Awesome!")
+    comment_on_post("eve", post1, "Super cool.")
+    comment_on_post("maria", post1, "Splendid.")
+    comment_on_post("james", post1, "Cool!")
+
+    comment_on_post("dave", post2, "Looking forward to it!")
+
     comment_on_post("alice", post3, "Oahu is amazing!")
-
-    # Additional posts
-    post4 = create_post("bob", "Just finished a great book!")
-    post5 = create_post("taylor", "Had an amazing dinner last night.")
-    post6 = create_post("james", "Started a new job today!")
-    post7 = create_post("maria", "Enjoying a sunny day at the beach.")
-    post8 = create_post("carol", "Learning to cook new recipes.")
-    post9 = create_post("dave", "Just ran a marathon!")
-    post10 = create_post("eve", "Exploring the city.")
-    post11 = create_post("alice", "Reading a fascinating article.")
-    post12 = create_post("bob", "Watching a new movie.")
-    post13 = create_post("taylor", "Attending a concert tonight.")
-    post14 = create_post("james", "Working on a new project.")
-    post15 = create_post("maria", "Visiting family this weekend.")
-    post16 = create_post("carol", "Trying out a new hobby.")
-    post17 = create_post("dave", "Just adopted a puppy!")
-    post18 = create_post("eve", "Planning a trip to Europe.")
-    post19 = create_post("alice", "Enjoying a quiet evening at home.")
-    post20 = create_post("bob", "Just finished a workout.")
-    post21 = create_post("taylor", "Had a terrible day at work.")
-    post22 = create_post("james", "Feeling frustrated with everything.")
-    post23 = create_post("maria", "Excited for the weekend!")
-    post24 = create_post("carol", "Just bought a new car.")
-    post25 = create_post("dave", "Celebrating a friend's birthday.")
-
-    # Posts with profanity
-    post26 = create_post("eve", "This is a damn good coffee!")
-    post27 = create_post("alice", "What the hell is going on?")
-
-    comment_on_post("bob", post4, "Sounds interesting!")
-    comment_on_post("taylor", post5, "Yum!")
-    comment_on_post("james", post6, "Congrats!")
-    comment_on_post("maria", post7, "Enjoy!")
-    comment_on_post("dave", post8, "Nice!")
-    comment_on_post("carol", post9, "Great job!")
-    comment_on_post("eve", post10, "Have fun!")
-    comment_on_post("alice", post11, "Interesting read.")
-    comment_on_post("bob", post12, "How was it?")
-    comment_on_post("taylor", post13, "Have a great time!")
-    comment_on_post("james", post14, "Good luck!")
-    comment_on_post("maria", post15, "Safe travels!")
-    comment_on_post("dave", post16, "Enjoy your new hobby!")
-    comment_on_post("carol", post17, "Congrats on the new puppy!")
-    comment_on_post("eve", post18, "Have a great trip!")
-    comment_on_post("alice", post19, "Sounds relaxing.")
-    comment_on_post("bob", post20, "Great job!")
-    comment_on_post("taylor", post21, "Sorry to hear that.")
-    comment_on_post("james", post22, "Hang in there.")
-    comment_on_post("maria", post23, "Me too!")
-    comment_on_post("dave", post24, "Congrats on the new car!")
-    comment_on_post("carol", post25, "Happy birthday to your friend!")
-    comment_on_post("eve", post26, "Glad you like it!")
-    comment_on_post("alice", post27, "I know, right?")
+    comment_on_post("carol", post3, "Love it!!")
+    comment_on_post("bob", post3, "Sick!")
 
     # Draw the social network graph
-    draw_social_network()
+    # Example Usage: Highlight posts based on 'interesting' users
+    find_users(criteria="comments")
 
-    # Example operations on the graph:
-
-    # Get all user's posts
-    print(f"alice's posts: {social_network.nodes['alice']['posts']}")
-    
-    # Get all comments under a post
     user_posts = social_network.nodes["alice"]["posts"]
     first_post = user_posts[0]
     comments = first_post["comments"]
-    for comment in comments:
-      print(f"User: {comment['user']}, Comment: {comment['content']}, Time: {comment['creation_time']}")
-
-    # Get all views of a post
-    print(f"User: post1 has {len(post1['views'])} views")
-
-    # Get the follower count of a user
-    user_followers = social_network.in_degree("bob")
-    print(f"User: bob has {user_followers} followers")
