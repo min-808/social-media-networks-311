@@ -242,6 +242,7 @@ def generateWordCloud(
   censorProfanity=True,
   minWordLength=3,
   maxPosts=None,
+  numWords=25
 ):
   """
   Generate a word cloud from the posts in a social network.
@@ -286,7 +287,6 @@ def generateWordCloud(
       filteredContentArr.append(content)
       postCount += 1
 
-  # Debug: Print the filtered content
   # print("Filtered Content Array:", filteredContentArr)
   
   filteredContentStr = ' '.join(filteredContentArr)
@@ -306,12 +306,12 @@ def generateWordCloud(
 
   # print("Word Counters:", wordCounters)
 
-  top25 = [word for word, count in wordCounters.most_common(25)]
+  topWords = [word for word, count in wordCounters.most_common(numWords)]
 
-  print("Top 25 Words:", top25)
+  print("Top 25 Words:", topWords)
 
   # Filter allContentStr to only include the top 25 words
-  wordCloudString = ' '.join([word for word in re.findall(r'\w+', allWordsSpaced) if word in top25])
+  wordCloudString = ' '.join([word for word in re.findall(r'\w+', allWordsSpaced) if word in topWords])
 
   print("Word Cloud String:", wordCloudString)
 
